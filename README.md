@@ -207,3 +207,9 @@ npm --prefix frontend run dev -- --host 127.0.0.1
 语境类型随单词本身份同步，Drive v1 操作字段及复习算法不变；导出、恢复备份也保留类型。旧客户端仍可读取和复习，但只能按通用语境补全，因此请在所有需要专业补全的设备上更新客户端。
 
 [查看语境单词本界面示例](docs/images/context-notebooks.png)（演示数据）。
+
+Logo、单词列表、单词本、复习、添加和设置位于顶部同一行；窄屏自动收起文字，保留图标、辅助名称和复习数量。内容区不再被侧栏占用。
+
+![桌面导航浅色示例](docs/images/sidebar-light.png)
+
+![桌面导航深色示例](docs/images/sidebar-dark.png)
