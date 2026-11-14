@@ -9,6 +9,10 @@ import NavigationIcon from '../components/NavigationIcon'
 import { isShortcutEvent } from '../lib/keyboard'
 import './NotebookPolish.css'
 
+// Keep the current entry session when navigating to a word and back, without
+// persisting private vocabulary in browser storage across application sessions.
+let entrySession = { word: '', addedWords: [] }
+
 function useProviderLabel() {
   const [label, setLabel] = useState('模型')
   useEffect(() => {
@@ -31,16 +35,30 @@ export default function WordNew() {
   const notebookId = searchParams.get('notebook_id') || 'default'
   const { notebooks, loading: booksLoading, error: booksError, refresh: refreshBooks } = useNotebooks()
   const selectedBook = notebooks.find(book => book.id === notebookId)
-  const [word, setWord] = useState('')
+  const [word, setWord] = useState(() => entrySession.word)
   const [loading, setLoading] = useState(false)
   const [toast, setToast] = useTransientMessage(null)
-  const [addedWords, setAddedWords] = useState([])
-  const addedRef = useRef([])
+  const [addedWords, setAddedWords] = useState(() => entrySession.addedWords)
+  const addedRef = useRef(addedWords)
   const inputRef = useRef(null)
   const composingRef = useRef(false)
   const compositionSubmitRef = useRef(false)
   const navigate = useNavigate()
   const providerLabel = useProviderLabel()
+  useEffect(() => { entrySession = { word, addedWords } }, [word, addedWords])
+  useEffect(() => {
+    let active = true
+    // Refresh edited definitions and removals after returning from details.
+    for (const entry of addedRef.current) {
+      fetchWord(entry.word.id).then(result => {
+        if (active) setAddedWords(previous => previous.map(item => item.word.id === entry.word.id
+          ? { ...item, ...result } : item))
+      }).catch(error => {
+        if (active && error.status === 404) setAddedWords(previous => previous.filter(item => item.word.id !== entry.word.id))
+      })
+    }
+    return () => { active = false }
+  }, [])
   useEffect(() => { addedRef.current = addedWords }, [addedWords])
   useEffect(() => {
     // 手机端不自动唤起键盘，保留用户先选择单词本的空间。
