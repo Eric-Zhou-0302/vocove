@@ -7,6 +7,7 @@ import { useNotebooks } from '../useNotebooks'
 import { useTransientMessage } from '../useTransientMessage'
 import NavigationIcon from '../components/NavigationIcon'
 import { isShortcutEvent } from '../lib/keyboard'
+import { lastNotebook, rememberNotebook, forgetNotebook } from '../lib/notebookMemory'
 import './NotebookPolish.css'
 
 function useProviderLabel() {
@@ -28,9 +29,16 @@ function useProviderLabel() {
 
 export default function WordNew() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const notebookId = searchParams.get('notebook_id') || 'default'
   const { notebooks, loading: booksLoading, error: booksError, refresh: refreshBooks } = useNotebooks()
+  // Without an explicit notebook, default to the one the user last switched to.
+  const remembered = lastNotebook()
+  const rememberedValid = remembered && (booksLoading || booksError || notebooks.some(book => book.id === remembered))
+  const notebookId = searchParams.get('notebook_id') || (rememberedValid ? remembered : 'default')
   const selectedBook = notebooks.find(book => book.id === notebookId)
+  useEffect(() => {
+    if (selectedBook) rememberNotebook(selectedBook.id)
+    else if (remembered && !booksLoading && !booksError && !rememberedValid) forgetNotebook(remembered)
+  }, [selectedBook, remembered, rememberedValid, booksLoading, booksError])
   const [word, setWord] = useState('')
   const [loading, setLoading] = useState(false)
   const [toast, setToast] = useTransientMessage(null)
